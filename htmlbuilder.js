@@ -36,7 +36,7 @@ function render(value) {
     return value.map(render).join("");
   }
   var next = value[0];
-  if (next && typeof next.constructor === Object) {
+  if (next && typeof next === "object") {
     attributes = next;
     value = value.slice(1);
   }
