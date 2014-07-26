@@ -88,11 +88,14 @@ function render(value) {
 var specialTags = {
   "cond-comment": function (condition) {
     var body = slice.call(arguments, 1);
-    return "<!--[if " + condition + "]>" +
+    return "<!--[if " + condition.replace(/--+/g, "-") + "]>" +
       body.map(render).join("") +
       "<![endif]-->";
-  }
-}
+  },
+  "comment": function (comment) {
+    return "<!-- " + comment.replace(/--+/g, "-") + "-->";
+  },
+};
 
 var isElement = {};
 [ // Root element
