@@ -3,6 +3,8 @@ render.raw = function (html) {
   return new RawHtml(html);
 };
 
+var slice = [].slice;
+
 var CLASS_MATCH = /\.[^.#]+/g,
     ID_MATCH = /#[^.#]+/,
     TAG_MATCH = /^[^.#]+/;
@@ -23,7 +25,15 @@ function render(value) {
   if (typeof value[0] === "string") {
     value = value.slice(1);
     var match = first.match(TAG_MATCH);
-    if (match) tag = match[0];
+    if (match) {
+      tag = match[0];
+      if (specialTags[tag]) {
+        tag = specialTags[tag];
+      }
+      else if (!isElement[tag]) {
+        throw new Error(tag + " is not a valid HTML5 tag.");
+      }
+    }
     match = first.match(CLASS_MATCH);
     if (match) classes = match.map(stripFirst).join(' ');
     match = first.match(ID_MATCH);
@@ -45,6 +55,9 @@ function render(value) {
     attributes.class = attributes.class ?
       attributes.class + " " + classes :
       classes;
+  }
+  if (typeof tag === "function") {
+    return tag.apply(value);
   }
   var html = "<" + tag;
   var keys = Object.keys(attributes);
@@ -72,36 +85,48 @@ function render(value) {
   return html;
 }
 
-// var elements = [
-//   // Root element
-//   "html",
-//   // Document metadata
-//   "head", "title", "base", "link", "meta", "style",
-//   // Scripting
-//   "script", "noscript", "template",
-//   // Sections
-//   "body", "section", "nav", "article", "aside", "h1", "h2", "h3", "h4", "h5", "h6", "header", "footer", "address", "main",
-//   // Grouping content
-//   "p", "hr", "pre", "blockquote", "ol", "ul", "li", "dl", "dt", "dd", "figure", "figcaption", "div",
-//   // Text-level semantics
-//   "a", "em", "strong", "small", "s", "cite", "q", "dfn", "abbr", "data", "time", "code", "var", "samp", "kbd", "sub", "sup", "i", "b", "u", "mark", "ruby", "rt", "rp", "bdi", "bdo", "span", "br", "wbr",
-//   // Edits
-//   "ins", "del",
-//   // Embedded content
-//   "img", "iframe", "embed", "object", "param", "video", "audio", "source", "track", "canvas", "map", "area", "svg", "math",
-//   // Tabular data
-//   "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th",
-//   // Forms
-//   "form", "fieldset", "legend", "label", "input", "button", "select", "datalist", "optgroup", "option", "textarea", "keygen", "output", "progress", "meter",
-//   // Interactive elements
-//   "details", "summary", "menuitem", "menu"
-// ];
+var specialTags = {
+  "cond-comment": function (condition) {
+    var body = slice.call(arguments, 1);
+    return "<!--[if " + condition + "]>" +
+      body.map(render).join("") +
+      "<![endif]-->";
+  }
+}
 
-var voidElements = {
-  area: true, base: true, br: true, col: true, command: true, embed: true,
-  hr: true, img: true, input: true, keygen: true, link: true, meta: true,
-  param: true, source: true, track: true, wbr: true,
-};
+var isElement = {};
+[ // Root element
+  "html",
+  // Document metadata
+  "head title base link meta style",
+  // Scripting
+  "script noscript template",
+  // Sections
+  "body section nav article aside h1 h2 h3 h4 h5 h6 header footer address main",
+  // Grouping content
+  "p hr pre blockquote ol ul li dl dt dd figure figcaption div",
+  // Text-level semantics
+  "a em strong small s cite q dfn abbr data time code var samp kbd sub sup i b u mark ruby rt rp bdi bdo span br wbr",
+  // Edits
+  "ins del",
+  // Embedded content
+  "img iframe embed object param video audio source track canvas map area svg math",
+  // Tabular data
+  "table caption colgroup col tbody thead tfoot tr td th",
+  // Forms
+  "form fieldset legend label input button select datalist optgroup option textarea keygen output progress meter",
+  // Interactive elements
+  "details", "summary", "menuitem", "menu"
+].forEach(function (tags) {
+  tags.split(" ").forEach(function (tag) {
+    isElement[tag] = true;
+  });
+});
+
+var voidElements = {};
+"area base br col command embed hr img input keygen link meta param source track wbr".split(" ").forEach(function (tag) {
+  voidElements[tag] = true;
+});
 
 // Will act like a string for everything except bracket access.
 function RawHtml(html) {
