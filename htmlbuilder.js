@@ -46,7 +46,7 @@ function render(value) {
     return value.map(render).join("");
   }
   var next = value[0];
-  if (next && typeof next === "object") {
+  if (next && !Array.isArray(next) && typeof next === "object") {
     attributes = next;
     value = value.slice(1);
   }
