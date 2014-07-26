@@ -57,7 +57,7 @@ function render(value) {
       classes;
   }
   if (typeof tag === "function") {
-    return tag.apply(value);
+    return tag.apply(null, value);
   }
   var html = "<" + tag;
   var keys = Object.keys(attributes);
